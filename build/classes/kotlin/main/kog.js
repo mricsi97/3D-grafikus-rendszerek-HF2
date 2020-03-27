@@ -17,13 +17,14 @@ var kog = function (_, Kotlin) {
   var equals = Kotlin.equals;
   var toString = Kotlin.toString;
   var ArrayList_init = Kotlin.kotlin.collections.ArrayList_init_287e2$;
+  var math = Kotlin.kotlin.math;
+  var Math_0 = Math;
   var toBoxedChar = Kotlin.toBoxedChar;
   var Regex_init = Kotlin.kotlin.text.Regex_init_61zpoe$;
   var StringBuilder_init = Kotlin.kotlin.text.StringBuilder_init_za3lpa$;
   var ensureNotNull = Kotlin.ensureNotNull;
   var getOrNull = Kotlin.kotlin.collections.getOrNull_rblqex$;
   var Array_0 = Array;
-  var Math_0 = Math;
   var HashMap_init = Kotlin.kotlin.collections.HashMap_init_q3lmfv$;
   var split = Kotlin.kotlin.text.split_ip8yn$;
   var lastOrNull = Kotlin.kotlin.collections.lastOrNull_2p1efm$;
@@ -52,14 +53,16 @@ var kog = function (_, Kotlin) {
   OrthoCamera.prototype.constructor = OrthoCamera;
   Program.prototype = Object.create(UniformProvider.prototype);
   Program.prototype.constructor = Program;
+  Scene$createProjectile$ObjectLiteral.prototype = Object.create(GameObject.prototype);
+  Scene$createProjectile$ObjectLiteral.prototype.constructor = Scene$createProjectile$ObjectLiteral;
   Scene$slowMovingAsteroid$ObjectLiteral.prototype = Object.create(GameObject.prototype);
   Scene$slowMovingAsteroid$ObjectLiteral.prototype.constructor = Scene$slowMovingAsteroid$ObjectLiteral;
   Scene$fastMovingAsteroid$ObjectLiteral.prototype = Object.create(GameObject.prototype);
   Scene$fastMovingAsteroid$ObjectLiteral.prototype.constructor = Scene$fastMovingAsteroid$ObjectLiteral;
   Scene$rollingAsteroid$ObjectLiteral.prototype = Object.create(GameObject.prototype);
   Scene$rollingAsteroid$ObjectLiteral.prototype.constructor = Scene$rollingAsteroid$ObjectLiteral;
-  Scene$rollableAsteroid$ObjectLiteral.prototype = Object.create(GameObject.prototype);
-  Scene$rollableAsteroid$ObjectLiteral.prototype.constructor = Scene$rollableAsteroid$ObjectLiteral;
+  Scene$lander$ObjectLiteral.prototype = Object.create(GameObject.prototype);
+  Scene$lander$ObjectLiteral.prototype.constructor = Scene$lander$ObjectLiteral;
   Scene$camera$ObjectLiteral.prototype = Object.create(OrthoCamera.prototype);
   Scene$camera$ObjectLiteral.prototype.constructor = Scene$camera$ObjectLiteral;
   Scene.prototype = Object.create(UniformProvider.prototype);
@@ -280,9 +283,6 @@ var kog = function (_, Kotlin) {
     tmp$.storage[0] = value;
     this.updateViewProjMatrix();
   };
-  OrthoCamera.prototype.setPosition_wobp51$ = function (p) {
-    this.position = p;
-  };
   OrthoCamera.$metadata$ = {
     kind: Kind_CLASS,
     simpleName: 'OrthoCamera',
@@ -346,81 +346,139 @@ var kog = function (_, Kotlin) {
   function Scene(gl) {
     UniformProvider.call(this, ['scene']);
     this.gl = gl;
+    this.timeAtFirstFrame = (new Date()).getTime();
+    this.timeAtLastFrame = this.timeAtFirstFrame;
     this.vsTrafo = new Shader(this.gl, WebGLRenderingContext.VERTEX_SHADER, 'shaders/trafo-vs.glsl');
     this.fsSolid = new Shader(this.gl, WebGLRenderingContext.FRAGMENT_SHADER, 'shaders/solid-fs.glsl');
     this.fsTextured = new Shader(this.gl, WebGLRenderingContext.FRAGMENT_SHADER, 'shaders/textured-fs.glsl');
     this.solidProgram = new Program(this.gl, this.vsTrafo, this.fsSolid);
     this.texturedProgram = new Program(this.gl, this.vsTrafo, this.fsTextured);
     this.quadGeometry = new TexturedQuadGeometry(this.gl);
-    this.timeAtFirstFrame = (new Date()).getTime();
-    this.timeAtLastFrame = this.timeAtFirstFrame;
     this.asteroidMaterial = new Material(this.texturedProgram);
     this.landerMaterial = new Material(this.texturedProgram);
-    this.yellowMaterial = new Material(this.solidProgram);
-    this.cyanMaterial = new Material(this.solidProgram);
-    this.yellowQuad = new Mesh(this.yellowMaterial, this.quadGeometry);
-    this.cyanQuad = new Mesh(this.cyanMaterial, this.quadGeometry);
+    this.projectileMaterial = new Material(this.texturedProgram);
     this.gameObjects = ArrayList_init();
-    this.yellowQuadObject = new GameObject(this.yellowQuad, Vec3_init(-0.6, 0.3, 0.0), 0.0, Vec3_init(0.2, 0.2, 0.0));
-    this.cyanQuadObject = new GameObject(this.cyanQuad, Vec3_init(-0.6, 0.7, 0.0), 0.0, Vec3_init(0.2, 0.2, 0.0));
     this.slowMovingAsteroid = new Scene$slowMovingAsteroid$ObjectLiteral(new Mesh(this.asteroidMaterial, this.quadGeometry));
     this.fastMovingAsteroid = new Scene$fastMovingAsteroid$ObjectLiteral(new Mesh(this.asteroidMaterial, this.quadGeometry));
     this.rollingAsteroid = new Scene$rollingAsteroid$ObjectLiteral(new Mesh(this.asteroidMaterial, this.quadGeometry));
-    this.rollableAsteroid = new Scene$rollableAsteroid$ObjectLiteral(new Mesh(this.asteroidMaterial, this.quadGeometry));
+    this.lander = new Scene$lander$ObjectLiteral(this, new Mesh(this.landerMaterial, this.quadGeometry));
     this.camera = new Scene$camera$ObjectLiteral(Program$Companion_getInstance().all.slice());
-    var tmp$, tmp$_0, tmp$_1, tmp$_2;
-    (tmp$ = this.yellowMaterial.get_61zpoe$('solidColor')) != null ? tmp$.set_qp9vav$(Vec4_init(1.0, 1.0, 0.0, 1.0)) : null;
-    (tmp$_0 = this.cyanMaterial.get_61zpoe$('solidColor')) != null ? tmp$_0.set_qp9vav$(Vec4_init(0.0, 1.0, 1.0, 1.0)) : null;
-    (tmp$_1 = this.asteroidMaterial.get_61zpoe$('colorTexture')) != null ? (tmp$_1.set_xwoe53$(new Texture2D(this.gl, 'media/asteroid.png'), []), Unit) : null;
-    (tmp$_2 = this.landerMaterial.get_61zpoe$('colorTexture')) != null ? (tmp$_2.set_xwoe53$(new Texture2D(this.gl, 'media/lander.png'), []), Unit) : null;
-    this.gameObjects.add_11rb$(this.yellowQuadObject);
-    this.gameObjects.add_11rb$(this.cyanQuadObject);
+    var tmp$, tmp$_0, tmp$_1;
+    (tmp$ = this.asteroidMaterial.get_61zpoe$('colorTexture')) != null ? (tmp$.set_xwoe53$(new Texture2D(this.gl, 'media/asteroid.png'), []), Unit) : null;
+    (tmp$_0 = this.landerMaterial.get_61zpoe$('colorTexture')) != null ? (tmp$_0.set_xwoe53$(new Texture2D(this.gl, 'media/lander.png'), []), Unit) : null;
+    (tmp$_1 = this.projectileMaterial.get_61zpoe$('colorTexture')) != null ? (tmp$_1.set_xwoe53$(new Texture2D(this.gl, 'media/projectile.png'), []), Unit) : null;
+    this.fastMovingAsteroid.position.set_8cqhcw$(new Float32Array([-1.0, -1.0]));
+    this.fastMovingAsteroid.scale.set_8cqhcw$(new Float32Array([0.1, 0.1]));
+    this.gameObjects.add_11rb$(this.fastMovingAsteroid);
     this.slowMovingAsteroid.position.set_8cqhcw$(new Float32Array([0.0, -0.5]));
     this.slowMovingAsteroid.scale.set_8cqhcw$(new Float32Array([0.1, 0.1]));
-    this.fastMovingAsteroid.position.set_8cqhcw$(new Float32Array([0.0, -0.3]));
-    this.fastMovingAsteroid.scale.set_8cqhcw$(new Float32Array([0.1, 0.1]));
     this.gameObjects.add_11rb$(this.slowMovingAsteroid);
-    this.gameObjects.add_11rb$(this.fastMovingAsteroid);
     this.rollingAsteroid.scale.set_8cqhcw$(new Float32Array([0.1, 0.1]));
+    this.rollingAsteroid.position.set_8cqhcw$(new Float32Array([0.5, -0.8]));
     this.gameObjects.add_11rb$(this.rollingAsteroid);
-    this.rollableAsteroid.scale.set_8cqhcw$(new Float32Array([0.1, 0.1]));
-    this.rollableAsteroid.position.set_8cqhcw$(new Float32Array([0.5, -0.8]));
-    this.gameObjects.add_11rb$(this.rollableAsteroid);
+    this.lander.scale.set_8cqhcw$(new Float32Array([0.1, 0.1, 0.1]));
+    this.gameObjects.add_11rb$(this.lander);
     this.gl.enable(WebGLRenderingContext.BLEND);
     this.gl.blendFunc(WebGLRenderingContext.SRC_ALPHA, WebGLRenderingContext.ONE_MINUS_SRC_ALPHA);
     this.addComponentsAndGatherUniforms_inpnaw$(Program$Companion_getInstance().all.slice());
   }
+  Scene.prototype.hamiltonProduct_fg98vm$ = function (q, p) {
+    return Vec4_init(q.storage[3] * p.storage[0] + q.storage[0] * p.storage[3] + q.storage[1] * p.storage[2] - q.storage[2] * p.storage[1], q.storage[3] * p.storage[1] - q.storage[0] * p.storage[2] + q.storage[1] * p.storage[3] + q.storage[2] * p.storage[0], q.storage[3] * p.storage[2] + q.storage[0] * p.storage[1] - q.storage[1] * p.storage[0] + q.storage[2] * p.storage[3], q.storage[3] * p.storage[3] - q.storage[0] * p.storage[0] - q.storage[1] * p.storage[1] - q.storage[2] * p.storage[2]);
+  };
+  function Scene$createProjectile$ObjectLiteral(this$Scene, mesh, position, roll, scale) {
+    GameObject.call(this, mesh, position, roll, scale);
+    this.enemyPosition = this$Scene.findClosestObject_wobp50$(this$Scene.lander.position);
+    this.mass = 0.2;
+    this.invMass = 1.0 / this.mass;
+    this.dragCoefficient = 0.5;
+    this.velocity = Vec3_init(0.0, 0.0, 0.0);
+  }
+  Scene$createProjectile$ObjectLiteral.prototype.move_e8h23$$default = function (dt, t, keysPressed, gameObjects) {
+    var $this = this.enemyPosition;
+    var other = this.position;
+    var $this_0 = Vec3_init($this.storage[0] - other.storage[0], $this.storage[1] - other.storage[1], $this.storage[2] - other.storage[2]);
+    var x = $this_0.storage[0] * $this_0.storage[0] + $this_0.storage[1] * $this_0.storage[1] + $this_0.storage[2] * $this_0.storage[2];
+    var l = Math_0.sqrt(x);
+    $this_0.storage[0] = $this_0.storage[0] / l;
+    $this_0.storage[1] = $this_0.storage[1] / l;
+    $this_0.storage[2] = $this_0.storage[2] / l;
+    var direction = $this_0;
+    var moveForce = Vec3_init(direction.storage[0] * 1.0, direction.storage[1] * 1.0, direction.storage[2] * 1.0);
+    var scalar = this.invMass;
+    var acceleration = Vec3_init(moveForce.storage[0] * scalar, moveForce.storage[1] * scalar, moveForce.storage[2] * scalar);
+    var tmp$ = this.velocity;
+    var other_0 = Vec3_init(acceleration.storage[0] * dt, acceleration.storage[1] * dt, acceleration.storage[2] * dt);
+    tmp$.storage[0] = tmp$.storage[0] + other_0.storage[0];
+    tmp$.storage[1] = tmp$.storage[1] + other_0.storage[1];
+    tmp$.storage[2] = tmp$.storage[2] + other_0.storage[2];
+    var tmp$_0 = this.velocity;
+    var x_0 = -dt * this.dragCoefficient * this.invMass;
+    var scalar_0 = Math_0.exp(x_0);
+    tmp$_0.storage[0] = tmp$_0.storage[0] * scalar_0;
+    tmp$_0.storage[1] = tmp$_0.storage[1] * scalar_0;
+    tmp$_0.storage[2] = tmp$_0.storage[2] * scalar_0;
+    var tmp$_1 = this.position;
+    var $this_1 = this.velocity;
+    var other_1 = Vec3_init($this_1.storage[0] * dt, $this_1.storage[1] * dt, $this_1.storage[2] * dt);
+    tmp$_1.storage[0] = tmp$_1.storage[0] + other_1.storage[0];
+    tmp$_1.storage[1] = tmp$_1.storage[1] + other_1.storage[1];
+    tmp$_1.storage[2] = tmp$_1.storage[2] + other_1.storage[2];
+    return true;
+  };
+  Scene$createProjectile$ObjectLiteral.$metadata$ = {
+    kind: Kind_CLASS,
+    interfaces: [GameObject]
+  };
+  Scene.prototype.createProjectile_wobp50$ = function (landerDirection) {
+    var projectile = new Scene$createProjectile$ObjectLiteral(this, new Mesh(this.projectileMaterial, this.quadGeometry));
+    var tmp$ = projectile.position;
+    var tmp$_0 = this.lander.position;
+    var other = Vec3_init(landerDirection.storage[0] * 0.055, landerDirection.storage[1] * 0.055, landerDirection.storage[2] * 0.055);
+    tmp$.set_qp9vav$(Vec3_init(tmp$_0.storage[0] - other.storage[0], tmp$_0.storage[1] - other.storage[1], tmp$_0.storage[2] - other.storage[2]));
+    projectile.scale.set_8cqhcw$(new Float32Array([0.01, 0.01, 0.01]));
+    this.gameObjects.add_11rb$(projectile);
+  };
+  Scene.prototype.findClosestObject_wobp50$ = function (ownPosition) {
+    var tmp$;
+    var closest = this.gameObjects.get_za3lpa$(0).position;
+    tmp$ = this.gameObjects.iterator();
+    while (tmp$.hasNext()) {
+      var i = tmp$.next();
+      var tmp$_0 = !equals(ownPosition, i.position);
+      if (tmp$_0) {
+        var $this = closest;
+        var $this_0 = Vec3_init($this.storage[0] - ownPosition.storage[0], $this.storage[1] - ownPosition.storage[1], $this.storage[2] - ownPosition.storage[2]);
+        var x = $this_0.storage[0] * $this_0.storage[0] + $this_0.storage[1] * $this_0.storage[1] + $this_0.storage[2] * $this_0.storage[2];
+        var tmp$_1 = Math_0.sqrt(x);
+        var $this_1 = i.position;
+        var $this_2 = Vec3_init($this_1.storage[0] - ownPosition.storage[0], $this_1.storage[1] - ownPosition.storage[1], $this_1.storage[2] - ownPosition.storage[2]);
+        var x_0 = $this_2.storage[0] * $this_2.storage[0] + $this_2.storage[1] * $this_2.storage[1] + $this_2.storage[2] * $this_2.storage[2];
+        tmp$_0 = tmp$_1 > Math_0.sqrt(x_0);
+      }
+      if (tmp$_0)
+        closest = i.position;
+    }
+    return closest;
+  };
   Scene.prototype.resize_smaims$ = function (gl, canvas) {
     gl.viewport(0, 0, canvas.width, canvas.height);
-    this.camera.setAspectRatio_mx4ult$(2.37);
+    this.camera.setAspectRatio_mx4ult$(1.7777778);
   };
   Scene.prototype.update_yv4vgl$ = function (gl, keysPressed) {
-    var dt = ((new Date()).getTime() - this.timeAtLastFrame) / 1000.0;
-    var t = ((new Date()).getTime() - this.timeAtFirstFrame) / 1000.0;
-    gl.clearColor(0.3, 0.0, 0.3, 1.0);
+    var timeAtThisFrame = (new Date()).getTime();
+    var dt = (timeAtThisFrame - this.timeAtLastFrame) / 1000.0;
+    var t = (timeAtThisFrame - this.timeAtFirstFrame) / 1000.0;
+    this.timeAtLastFrame = timeAtThisFrame;
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clearDepth(1.0);
     gl.clear(WebGLRenderingContext.COLOR_BUFFER_BIT | WebGLRenderingContext.DEPTH_BUFFER_BIT);
-    this.asteroidMaterial.draw_a4auz3$([]);
-    gl.useProgram(this.texturedProgram.glProgram);
-    gl.uniformMatrix4fv(gl.getUniformLocation(this.texturedProgram.glProgram, 'gameObject.modelMatrix'), false, new Float32Array([0.2, 0.0, 0.0, -0.1, 0.0, 0.2, 0.0, 0.3, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]));
-    this.quadGeometry.draw();
-    this.landerMaterial.draw_a4auz3$([]);
-    gl.useProgram(this.texturedProgram.glProgram);
-    gl.uniformMatrix4fv(gl.getUniformLocation(this.texturedProgram.glProgram, 'gameObject.modelMatrix'), false, new Float32Array([0.2, 0.0, 0.0, -0.1, 0.0, 0.2, 0.0, 0.7, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]));
-    this.quadGeometry.draw();
-    gl.useProgram(this.solidProgram.glProgram);
-    gl.uniformMatrix4fv(gl.getUniformLocation(this.solidProgram.glProgram, 'gameObject.modelMatrix'), false, new Float32Array([0.2, 0.0, 0.0, 0.5, 0.0, 0.2, 0.0, 0.7, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]));
-    this.yellowQuad.draw_a4auz3$([]);
-    gl.useProgram(this.solidProgram.glProgram);
-    gl.uniformMatrix4fv(gl.getUniformLocation(this.solidProgram.glProgram, 'gameObject.modelMatrix'), false, new Float32Array([0.2, 0.0, 0.0, 0.5, 0.0, 0.2, 0.0, 0.3, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]));
-    this.cyanQuad.draw_a4auz3$([]);
-    this.camera.position = new Vec2(this.slowMovingAsteroid.position.storage);
+    this.camera.position = new Vec2(this.lander.position.storage);
     this.camera.updateViewProjMatrix();
     var tmp$;
     tmp$ = this.gameObjects.iterator();
     while (tmp$.hasNext()) {
       var element = tmp$.next();
-      element.move_e8h23$(t, dt, keysPressed, this.gameObjects);
+      element.move_e8h23$(dt, t, keysPressed, this.gameObjects);
     }
     var tmp$_0;
     tmp$_0 = this.gameObjects.iterator();
@@ -435,9 +493,9 @@ var kog = function (_, Kotlin) {
       element_1.draw_a4auz3$([this.camera]);
     }
   };
-  function Scene$slowMovingAsteroid$ObjectLiteral(mesh_0, position_0, roll_0, scale_0) {
-    GameObject.call(this, mesh_0, position_0, roll_0, scale_0);
-    this.velocity = Vec3_init(0.001, 0.001);
+  function Scene$slowMovingAsteroid$ObjectLiteral(mesh, position, roll, scale) {
+    GameObject.call(this, mesh, position, roll, scale);
+    this.velocity = Vec3_init(0.1, 0.1);
   }
   Scene$slowMovingAsteroid$ObjectLiteral.prototype.move_e8h23$$default = function (dt, t, keysPressed, gameObjects) {
     var tmp$ = this.position;
@@ -452,9 +510,9 @@ var kog = function (_, Kotlin) {
     kind: Kind_CLASS,
     interfaces: [GameObject]
   };
-  function Scene$fastMovingAsteroid$ObjectLiteral(mesh_0, position_0, roll_0, scale_0) {
-    GameObject.call(this, mesh_0, position_0, roll_0, scale_0);
-    this.velocity = Vec3_init(0.01, 0.01);
+  function Scene$fastMovingAsteroid$ObjectLiteral(mesh, position, roll, scale) {
+    GameObject.call(this, mesh, position, roll, scale);
+    this.velocity = Vec3_init(1.0, 1.0);
   }
   Scene$fastMovingAsteroid$ObjectLiteral.prototype.move_e8h23$$default = function (dt, t, keysPressed, gameObjects) {
     var tmp$ = this.position;
@@ -469,8 +527,8 @@ var kog = function (_, Kotlin) {
     kind: Kind_CLASS,
     interfaces: [GameObject]
   };
-  function Scene$rollingAsteroid$ObjectLiteral(mesh_0, position_0, roll_0, scale_0) {
-    GameObject.call(this, mesh_0, position_0, roll_0, scale_0);
+  function Scene$rollingAsteroid$ObjectLiteral(mesh, position, roll, scale) {
+    GameObject.call(this, mesh, position, roll, scale);
     this.rollSpeed = 0.01;
   }
   Scene$rollingAsteroid$ObjectLiteral.prototype.move_e8h23$$default = function (dt, t, keysPressed, gameObjects) {
@@ -481,18 +539,132 @@ var kog = function (_, Kotlin) {
     kind: Kind_CLASS,
     interfaces: [GameObject]
   };
-  function Scene$rollableAsteroid$ObjectLiteral(mesh_0, position_0, roll_0, scale_0) {
-    GameObject.call(this, mesh_0, position_0, roll_0, scale_0);
-    this.rollSpeed = 0.1;
+  function Scene$lander$ObjectLiteral(this$Scene, mesh, position, roll, scale) {
+    this.this$Scene = this$Scene;
+    GameObject.call(this, mesh, position, roll, scale);
+    this.mass = 1.0;
+    this.invMass = 1.0 / this.mass;
+    this.invAngularMass = Mat4_init(new Float32Array([this.mass * 0.0025, 0.0, 0.0, 0.0, 0.0, this.mass * 0.0025, 0.0, 0.0, 0.0, 0.0, this.mass * 0.0025, 0.0, 0.0, 0.0, 0.0, 1.0])).invert();
+    this.dragCoefficient = 1.5;
+    this.momentum = Vec3_init(0.0, 0.0, 0.0);
+    this.angularMomentum = Vec3_init(0.0, 0.0, 0.0);
+    this.orientation = Vec4_init();
+    this.initialDirection = Vec4_init(0.0, 1.0, 0.0, 0.0);
+    this.projectileCooldown = 5.0;
+    this.projectileCooldownCounter = 0.0;
   }
-  Scene$rollableAsteroid$ObjectLiteral.prototype.move_e8h23$$default = function (dt, t, keysPressed, gameObjects) {
-    if (keysPressed.contains_11rb$('A'))
-      this.roll = this.roll + this.rollSpeed;
-    if (keysPressed.contains_11rb$('D'))
-      this.roll = this.roll - this.rollSpeed;
+  Scene$lander$ObjectLiteral.prototype.move_e8h23$$default = function (dt, t, keysPressed, gameObjects) {
+    this.projectileCooldownCounter -= dt;
+    var conjOrientation = Vec4_init(0.0, 0.0, -this.orientation.storage[2], this.orientation.storage[3]);
+    var $this = this.this$Scene.hamiltonProduct_fg98vm$(this.this$Scene.hamiltonProduct_fg98vm$(this.orientation, this.initialDirection), conjOrientation);
+    var x = $this.storage[0] * $this.storage[0] + $this.storage[1] * $this.storage[1] + $this.storage[2] * $this.storage[2] + $this.storage[3] * $this.storage[3];
+    var l = Math_0.sqrt(x);
+    $this.storage[0] = $this.storage[0] / l;
+    $this.storage[1] = $this.storage[1] / l;
+    $this.storage[2] = $this.storage[2] / l;
+    $this.storage[3] = $this.storage[3] / l;
+    var direction = $this;
+    var moveForce = Vec3_init(0.0, 0.0, 0.0);
+    var turnForce = Vec3_init(0.0, 0.0, 0.0);
+    if (keysPressed.contains_11rb$('W')) {
+      var $this_0 = new Vec3(direction.storage);
+      var other = Vec3_init($this_0.storage[0] * 2.0, $this_0.storage[1] * 2.0, $this_0.storage[2] * 2.0);
+      moveForce.storage[0] = moveForce.storage[0] + other.storage[0];
+      moveForce.storage[1] = moveForce.storage[1] + other.storage[1];
+      moveForce.storage[2] = moveForce.storage[2] + other.storage[2];
+    }
+    if (keysPressed.contains_11rb$('S')) {
+      var $this_1 = new Vec3(direction.storage);
+      var $this_2 = Vec3_init(-$this_1.storage[0], -$this_1.storage[1], -$this_1.storage[2]);
+      var other_0 = Vec3_init($this_2.storage[0] * 2.0, $this_2.storage[1] * 2.0, $this_2.storage[2] * 2.0);
+      moveForce.storage[0] = moveForce.storage[0] + other_0.storage[0];
+      moveForce.storage[1] = moveForce.storage[1] + other_0.storage[1];
+      moveForce.storage[2] = moveForce.storage[2] + other_0.storage[2];
+    }
+    if (keysPressed.contains_11rb$('A')) {
+      var other_1 = Vec3_init(-direction.storage[1] * 2.0, direction.storage[0] * 2.0, 0.0);
+      turnForce.storage[0] = turnForce.storage[0] + other_1.storage[0];
+      turnForce.storage[1] = turnForce.storage[1] + other_1.storage[1];
+      turnForce.storage[2] = turnForce.storage[2] + other_1.storage[2];
+    }
+    if (keysPressed.contains_11rb$('D')) {
+      var other_2 = Vec3_init(direction.storage[1] * 2.0, -direction.storage[0] * 2.0, 0.0);
+      turnForce.storage[0] = turnForce.storage[0] + other_2.storage[0];
+      turnForce.storage[1] = turnForce.storage[1] + other_2.storage[1];
+      turnForce.storage[2] = turnForce.storage[2] + other_2.storage[2];
+    }
+    if (keysPressed.contains_11rb$('SPACE'))
+      if (this.projectileCooldownCounter <= 0) {
+        this.this$Scene.createProjectile_wobp50$(new Vec3(direction.storage));
+        this.projectileCooldownCounter = this.projectileCooldown;
+      }
+    var tmp$ = this.momentum;
+    var other_3 = Vec3_init(moveForce.storage[0] * dt, moveForce.storage[1] * dt, moveForce.storage[2] * dt);
+    tmp$.storage[0] = tmp$.storage[0] + other_3.storage[0];
+    tmp$.storage[1] = tmp$.storage[1] + other_3.storage[1];
+    tmp$.storage[2] = tmp$.storage[2] + other_3.storage[2];
+    var tmp$_0 = this.momentum;
+    var x_0 = -dt * this.dragCoefficient * this.invMass;
+    var scalar = Math_0.exp(x_0);
+    tmp$_0.storage[0] = tmp$_0.storage[0] * scalar;
+    tmp$_0.storage[1] = tmp$_0.storage[1] * scalar;
+    tmp$_0.storage[2] = tmp$_0.storage[2] * scalar;
+    var $this_3 = this.momentum;
+    var scalar_0 = this.invMass;
+    var velocity = Vec3_init($this_3.storage[0] * scalar_0, $this_3.storage[1] * scalar_0, $this_3.storage[2] * scalar_0);
+    var tmp$_1 = this.position;
+    var other_4 = Vec3_init(velocity.storage[0] * dt, velocity.storage[1] * dt, velocity.storage[2] * dt);
+    tmp$_1.storage[0] = tmp$_1.storage[0] + other_4.storage[0];
+    tmp$_1.storage[1] = tmp$_1.storage[1] + other_4.storage[1];
+    tmp$_1.storage[2] = tmp$_1.storage[2] + other_4.storage[2];
+    var $this_4 = new Vec3(direction.storage);
+    var torque = Vec3_init($this_4.storage[1] * turnForce.storage[2] - $this_4.storage[2] * turnForce.storage[1], $this_4.storage[2] * turnForce.storage[0] - $this_4.storage[0] * turnForce.storage[2], $this_4.storage[0] * turnForce.storage[1] - $this_4.storage[1] * turnForce.storage[0]);
+    var tmp$_2 = this.angularMomentum;
+    var other_5 = Vec3_init(torque.storage[0] * dt, torque.storage[1] * dt, torque.storage[2] * dt);
+    tmp$_2.storage[0] = tmp$_2.storage[0] + other_5.storage[0];
+    tmp$_2.storage[1] = tmp$_2.storage[1] + other_5.storage[1];
+    tmp$_2.storage[2] = tmp$_2.storage[2] + other_5.storage[2];
+    var tmp$_3 = this.angularMomentum;
+    var x_1 = -dt * this.dragCoefficient * this.invMass;
+    var scalar_1 = Math_0.exp(x_1);
+    tmp$_3.storage[0] = tmp$_3.storage[0] * scalar_1;
+    tmp$_3.storage[1] = tmp$_3.storage[1] * scalar_1;
+    tmp$_3.storage[2] = tmp$_3.storage[2] * scalar_1;
+    var transModelMatrix = this.modelMatrix.clone().transpose();
+    var $this_5 = Vec4_init_2(this.angularMomentum, 0.0);
+    var vp = Vec4_init_3($this_5);
+    vp.storage[0] = transModelMatrix.storage[0] * $this_5.storage[0] + transModelMatrix.storage[1] * $this_5.storage[1] + transModelMatrix.storage[2] * $this_5.storage[2] + transModelMatrix.storage[3] * $this_5.storage[3];
+    vp.storage[1] = transModelMatrix.storage[4] * $this_5.storage[0] + transModelMatrix.storage[5] * $this_5.storage[1] + transModelMatrix.storage[6] * $this_5.storage[2] + transModelMatrix.storage[7] * $this_5.storage[3];
+    vp.storage[2] = transModelMatrix.storage[8] * $this_5.storage[0] + transModelMatrix.storage[9] * $this_5.storage[1] + transModelMatrix.storage[10] * $this_5.storage[2] + transModelMatrix.storage[11] * $this_5.storage[3];
+    vp.storage[3] = transModelMatrix.storage[12] * $this_5.storage[0] + transModelMatrix.storage[13] * $this_5.storage[1] + transModelMatrix.storage[14] * $this_5.storage[2] + transModelMatrix.storage[15] * $this_5.storage[3];
+    var m = this.invAngularMass;
+    var vp_0 = Vec4_init_3(vp);
+    vp_0.storage[0] = m.storage[0] * vp.storage[0] + m.storage[1] * vp.storage[1] + m.storage[2] * vp.storage[2] + m.storage[3] * vp.storage[3];
+    vp_0.storage[1] = m.storage[4] * vp.storage[0] + m.storage[5] * vp.storage[1] + m.storage[6] * vp.storage[2] + m.storage[7] * vp.storage[3];
+    vp_0.storage[2] = m.storage[8] * vp.storage[0] + m.storage[9] * vp.storage[1] + m.storage[10] * vp.storage[2] + m.storage[11] * vp.storage[3];
+    vp_0.storage[3] = m.storage[12] * vp.storage[0] + m.storage[13] * vp.storage[1] + m.storage[14] * vp.storage[2] + m.storage[15] * vp.storage[3];
+    var m_0 = this.modelMatrix;
+    var vp_1 = Vec4_init_3(vp_0);
+    vp_1.storage[0] = m_0.storage[0] * vp_0.storage[0] + m_0.storage[1] * vp_0.storage[1] + m_0.storage[2] * vp_0.storage[2] + m_0.storage[3] * vp_0.storage[3];
+    vp_1.storage[1] = m_0.storage[4] * vp_0.storage[0] + m_0.storage[5] * vp_0.storage[1] + m_0.storage[6] * vp_0.storage[2] + m_0.storage[7] * vp_0.storage[3];
+    vp_1.storage[2] = m_0.storage[8] * vp_0.storage[0] + m_0.storage[9] * vp_0.storage[1] + m_0.storage[10] * vp_0.storage[2] + m_0.storage[11] * vp_0.storage[3];
+    vp_1.storage[3] = m_0.storage[12] * vp_0.storage[0] + m_0.storage[13] * vp_0.storage[1] + m_0.storage[14] * vp_0.storage[2] + m_0.storage[15] * vp_0.storage[3];
+    var angularVelocity = vp_1;
+    var $this_6 = new Vec3(angularVelocity.storage);
+    var rotation = Vec3_init($this_6.storage[0] * dt, $this_6.storage[1] * dt, $this_6.storage[2] * dt);
+    var tmp$_4 = this.this$Scene;
+    var tmp$_5 = this.orientation;
+    var x_2 = rotation.storage[2] / 2.0;
+    var tmp$_6 = Math_0.sin(x_2);
+    var x_3 = rotation.storage[2] / 2.0;
+    this.orientation = tmp$_4.hamiltonProduct_fg98vm$(tmp$_5, Vec4_init(0.0, 0.0, tmp$_6, Math_0.cos(x_3)));
+    direction = this.this$Scene.hamiltonProduct_fg98vm$(this.this$Scene.hamiltonProduct_fg98vm$(this.orientation, this.initialDirection), conjOrientation);
+    var tmp$_7 = direction.storage[1];
+    var x_4 = direction.storage[0];
+    this.roll = Math_0.atan2(tmp$_7, x_4) - math.PI / 2.0;
     return true;
   };
-  Scene$rollableAsteroid$ObjectLiteral.$metadata$ = {
+  Scene$lander$ObjectLiteral.$metadata$ = {
     kind: Kind_CLASS,
     interfaces: [GameObject]
   };

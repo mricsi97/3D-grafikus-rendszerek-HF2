@@ -27,8 +27,4 @@ open class OrthoCamera(vararg programs : Program) : UniformProvider("camera") {
 		windowSize.x = windowSize.y * ar
 		updateViewProjMatrix()
 	}
-	
-	fun setPosition(p : Vec2){
-		position = p
-	}
 }
