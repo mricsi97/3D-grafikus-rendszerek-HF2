@@ -34,7 +34,7 @@ class Scene (
   
   val gameObjects = ArrayList<GameObject>()
    
-  val slowMovingAsteroid = object: GameObject(Mesh(asteroidMaterial, quadGeometry)){
+  val slowMovingAsteroid = object: GameObject(Mesh(asteroidMaterial, quadGeometry), 0.1f){
     val velocity = Vec3(0.1f, 0.1f)
     override fun move(dt : Float, t : Float, keysPressed : Set<String>, gameObjects : List<GameObject>) : Boolean {
       position += velocity * dt
@@ -42,7 +42,7 @@ class Scene (
     }
   }
   
-  val fastMovingAsteroid = object: GameObject(Mesh(asteroidMaterial, quadGeometry)){
+  val fastMovingAsteroid = object: GameObject(Mesh(asteroidMaterial, quadGeometry), 0.1f){
     val velocity = Vec3(1.0f, 1.0f)
     override fun move(dt : Float, t : Float, keysPressed : Set<String>, gameObjects : List<GameObject>) : Boolean {
       position += velocity * dt
@@ -50,7 +50,7 @@ class Scene (
     }
   }
   
-  val rollingAsteroid = object: GameObject(Mesh(asteroidMaterial, quadGeometry)){
+  val rollingAsteroid = object: GameObject(Mesh(asteroidMaterial, quadGeometry), 0.1f){
   	val rollSpeed = 0.01f
     override fun move(dt : Float, t : Float, keysPressed : Set<String>, gameObjects : List<GameObject>) : Boolean {
       roll += rollSpeed
@@ -58,7 +58,7 @@ class Scene (
     }
   }
   
-  val lander = object: GameObject(Mesh(landerMaterial, quadGeometry)) {
+  val lander = object: GameObject(Mesh(landerMaterial, quadGeometry), 0.1f) {
     val mass = 1.0f
     val invMass = 1.0f / mass
     val invAngularMass = Mat4(mass*0.0025f,          0.0f,           0.0f, 0.0f,
@@ -114,6 +114,16 @@ class Scene (
       this.roll = atan2(direction.y, direction.x) - PI.toFloat() / 2.0f
       return true
     }
+
+    override fun collide() {
+      for(i in gameObjects)
+        if(this != i && circleCollision(this, i))
+          this.destroy()
+    }
+
+    fun destroy(){
+      gameObjects.remove(this)
+    }
   }
 
   fun hamiltonProduct(q : Vec4, p : Vec4) : Vec4 {
@@ -126,7 +136,7 @@ class Scene (
   val camera = object: OrthoCamera(*Program.all) {}
 
   fun createProjectile(landerDirection : Vec3){
-    val projectile = object : GameObject(Mesh(projectileMaterial, quadGeometry)) {
+    val projectile = object : GameObject(Mesh(projectileMaterial, quadGeometry), 0.001f) {
       val enemyPosition = findClosestObject(lander.position)
       val mass = 0.2f
       val invMass = 1.0f / mass
@@ -145,9 +155,18 @@ class Scene (
 
         return true
       }
+
+      override fun collide(){
+        for(i in gameObjects)
+          if(this != i && circleCollision(this, i))
+              this.destroy()
+      }
+      fun destroy(){
+        gameObjects.remove(this)
+      }
     }
 
-    projectile.position.set(lander.position - landerDirection * 0.055f)
+    projectile.position.set(lander.position - landerDirection * 0.155f)
     projectile.scale.set(0.01f, 0.01f, 0.01f)
     gameObjects.add(projectile)
   }
@@ -159,6 +178,10 @@ class Scene (
         closest = i.position
     }
     return closest
+  }
+
+  fun circleCollision(obj1 : GameObject, obj2 : GameObject) : Boolean {
+    return (obj1.position - obj2.position).length() <= obj1.radius + obj2.radius
   }
 
   init{
@@ -175,11 +198,12 @@ class Scene (
   slowMovingAsteroid.scale.set(0.1f, 0.1f)
   gameObjects.add(slowMovingAsteroid)
   
-  rollingAsteroid.scale.set(0.1f, 0.1f)
   rollingAsteroid.position.set(0.5f, -0.8f)
+  rollingAsteroid.scale.set(0.1f, 0.1f)
   gameObjects.add(rollingAsteroid)
 
   lander.scale.set(0.1f, 0.1f, 0.1f)
+  lander.position.set(-1.0f, 1.0f, 0.0f)
   gameObjects.add(lander)
   
   gl.enable(GL.BLEND)
@@ -209,7 +233,9 @@ class Scene (
     camera.position = lander.position.xy
     camera.updateViewProjMatrix()
     
+
     gameObjects.forEach { it.move(dt, t, keysPressed, gameObjects) }
+    gameObjects.forEach { it.collide() }
     gameObjects.forEach { it.update() }
     gameObjects.forEach { it.draw(camera) }
   }

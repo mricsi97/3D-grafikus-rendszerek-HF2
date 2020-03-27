@@ -5,6 +5,7 @@ import vision.gears.webglmath.Vec3Array
 
 open class GameObject(
   mesh : Mesh,
+  val radius : Float = 0.0f,
   val position : Vec3 = Vec3.zeros.clone(),
   var roll : Float = 0.0f,
   val scale : Vec3 = Vec3.ones.clone()
@@ -31,5 +32,7 @@ open class GameObject(
 	) : Boolean {
 	return true
 	}
+
+  open fun collide(){}
 
 }

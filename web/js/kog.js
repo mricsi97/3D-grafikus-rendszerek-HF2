@@ -178,7 +178,9 @@ var kog = function (_, Kotlin) {
         throw e;
     }
   }
-  function GameObject(mesh, position, roll, scale) {
+  function GameObject(mesh, radius, position, roll, scale) {
+    if (radius === void 0)
+      radius = 0.0;
     if (position === void 0) {
       position = Vec3_init_2(Vec3$Companion_getInstance().zeros);
     }
@@ -188,6 +190,7 @@ var kog = function (_, Kotlin) {
       scale = Vec3_init_2(Vec3$Companion_getInstance().ones);
     }
     UniformProvider.call(this, ['gameObject']);
+    this.radius = radius;
     this.position = position;
     this.roll = roll;
     this.scale = scale;
@@ -216,6 +219,8 @@ var kog = function (_, Kotlin) {
     if (gameObjects === void 0)
       gameObjects = emptyList();
     return callback$default ? callback$default(dt, t, keysPressed, gameObjects) : this.move_e8h23$$default(dt, t, keysPressed, gameObjects);
+  };
+  GameObject.prototype.collide = function () {
   };
   GameObject.$metadata$ = {
     kind: Kind_CLASS,
@@ -358,10 +363,10 @@ var kog = function (_, Kotlin) {
     this.landerMaterial = new Material(this.texturedProgram);
     this.projectileMaterial = new Material(this.texturedProgram);
     this.gameObjects = ArrayList_init();
-    this.slowMovingAsteroid = new Scene$slowMovingAsteroid$ObjectLiteral(new Mesh(this.asteroidMaterial, this.quadGeometry));
-    this.fastMovingAsteroid = new Scene$fastMovingAsteroid$ObjectLiteral(new Mesh(this.asteroidMaterial, this.quadGeometry));
-    this.rollingAsteroid = new Scene$rollingAsteroid$ObjectLiteral(new Mesh(this.asteroidMaterial, this.quadGeometry));
-    this.lander = new Scene$lander$ObjectLiteral(this, new Mesh(this.landerMaterial, this.quadGeometry));
+    this.slowMovingAsteroid = new Scene$slowMovingAsteroid$ObjectLiteral(new Mesh(this.asteroidMaterial, this.quadGeometry), 0.1);
+    this.fastMovingAsteroid = new Scene$fastMovingAsteroid$ObjectLiteral(new Mesh(this.asteroidMaterial, this.quadGeometry), 0.1);
+    this.rollingAsteroid = new Scene$rollingAsteroid$ObjectLiteral(new Mesh(this.asteroidMaterial, this.quadGeometry), 0.1);
+    this.lander = new Scene$lander$ObjectLiteral(this, new Mesh(this.landerMaterial, this.quadGeometry), 0.1);
     this.camera = new Scene$camera$ObjectLiteral(Program$Companion_getInstance().all.slice());
     var tmp$, tmp$_0, tmp$_1;
     (tmp$ = this.asteroidMaterial.get_61zpoe$('colorTexture')) != null ? (tmp$.set_xwoe53$(new Texture2D(this.gl, 'media/asteroid.png'), []), Unit) : null;
@@ -373,10 +378,11 @@ var kog = function (_, Kotlin) {
     this.slowMovingAsteroid.position.set_8cqhcw$(new Float32Array([0.0, -0.5]));
     this.slowMovingAsteroid.scale.set_8cqhcw$(new Float32Array([0.1, 0.1]));
     this.gameObjects.add_11rb$(this.slowMovingAsteroid);
-    this.rollingAsteroid.scale.set_8cqhcw$(new Float32Array([0.1, 0.1]));
     this.rollingAsteroid.position.set_8cqhcw$(new Float32Array([0.5, -0.8]));
+    this.rollingAsteroid.scale.set_8cqhcw$(new Float32Array([0.1, 0.1]));
     this.gameObjects.add_11rb$(this.rollingAsteroid);
     this.lander.scale.set_8cqhcw$(new Float32Array([0.1, 0.1, 0.1]));
+    this.lander.position.set_8cqhcw$(new Float32Array([-1.0, 1.0, 0.0]));
     this.gameObjects.add_11rb$(this.lander);
     this.gl.enable(WebGLRenderingContext.BLEND);
     this.gl.blendFunc(WebGLRenderingContext.SRC_ALPHA, WebGLRenderingContext.ONE_MINUS_SRC_ALPHA);
@@ -385,8 +391,9 @@ var kog = function (_, Kotlin) {
   Scene.prototype.hamiltonProduct_fg98vm$ = function (q, p) {
     return Vec4_init(q.storage[3] * p.storage[0] + q.storage[0] * p.storage[3] + q.storage[1] * p.storage[2] - q.storage[2] * p.storage[1], q.storage[3] * p.storage[1] - q.storage[0] * p.storage[2] + q.storage[1] * p.storage[3] + q.storage[2] * p.storage[0], q.storage[3] * p.storage[2] + q.storage[0] * p.storage[1] - q.storage[1] * p.storage[0] + q.storage[2] * p.storage[3], q.storage[3] * p.storage[3] - q.storage[0] * p.storage[0] - q.storage[1] * p.storage[1] - q.storage[2] * p.storage[2]);
   };
-  function Scene$createProjectile$ObjectLiteral(this$Scene, mesh, position, roll, scale) {
-    GameObject.call(this, mesh, position, roll, scale);
+  function Scene$createProjectile$ObjectLiteral(this$Scene, mesh, radius, position, roll, scale) {
+    this.this$Scene = this$Scene;
+    GameObject.call(this, mesh, radius, position, roll, scale);
     this.enemyPosition = this$Scene.findClosestObject_wobp50$(this$Scene.lander.position);
     this.mass = 0.2;
     this.invMass = 1.0 / this.mass;
@@ -425,15 +432,27 @@ var kog = function (_, Kotlin) {
     tmp$_1.storage[2] = tmp$_1.storage[2] + other_1.storage[2];
     return true;
   };
+  Scene$createProjectile$ObjectLiteral.prototype.collide = function () {
+    var tmp$;
+    tmp$ = this.this$Scene.gameObjects.iterator();
+    while (tmp$.hasNext()) {
+      var i = tmp$.next();
+      if (!equals(this, i) && this.this$Scene.circleCollision_bk6g6s$(this, i))
+        this.destroy();
+    }
+  };
+  Scene$createProjectile$ObjectLiteral.prototype.destroy = function () {
+    this.this$Scene.gameObjects.remove_11rb$(this);
+  };
   Scene$createProjectile$ObjectLiteral.$metadata$ = {
     kind: Kind_CLASS,
     interfaces: [GameObject]
   };
   Scene.prototype.createProjectile_wobp50$ = function (landerDirection) {
-    var projectile = new Scene$createProjectile$ObjectLiteral(this, new Mesh(this.projectileMaterial, this.quadGeometry));
+    var projectile = new Scene$createProjectile$ObjectLiteral(this, new Mesh(this.projectileMaterial, this.quadGeometry), 0.001);
     var tmp$ = projectile.position;
     var tmp$_0 = this.lander.position;
-    var other = Vec3_init(landerDirection.storage[0] * 0.055, landerDirection.storage[1] * 0.055, landerDirection.storage[2] * 0.055);
+    var other = Vec3_init(landerDirection.storage[0] * 0.155, landerDirection.storage[1] * 0.155, landerDirection.storage[2] * 0.155);
     tmp$.set_qp9vav$(Vec3_init(tmp$_0.storage[0] - other.storage[0], tmp$_0.storage[1] - other.storage[1], tmp$_0.storage[2] - other.storage[2]));
     projectile.scale.set_8cqhcw$(new Float32Array([0.01, 0.01, 0.01]));
     this.gameObjects.add_11rb$(projectile);
@@ -460,6 +479,13 @@ var kog = function (_, Kotlin) {
     }
     return closest;
   };
+  Scene.prototype.circleCollision_bk6g6s$ = function (obj1, obj2) {
+    var $this = obj1.position;
+    var other = obj2.position;
+    var $this_0 = Vec3_init($this.storage[0] - other.storage[0], $this.storage[1] - other.storage[1], $this.storage[2] - other.storage[2]);
+    var x = $this_0.storage[0] * $this_0.storage[0] + $this_0.storage[1] * $this_0.storage[1] + $this_0.storage[2] * $this_0.storage[2];
+    return Math_0.sqrt(x) <= obj1.radius + obj2.radius;
+  };
   Scene.prototype.resize_smaims$ = function (gl, canvas) {
     gl.viewport(0, 0, canvas.width, canvas.height);
     this.camera.setAspectRatio_mx4ult$(1.7777778);
@@ -484,17 +510,23 @@ var kog = function (_, Kotlin) {
     tmp$_0 = this.gameObjects.iterator();
     while (tmp$_0.hasNext()) {
       var element_0 = tmp$_0.next();
-      element_0.update();
+      element_0.collide();
     }
     var tmp$_1;
     tmp$_1 = this.gameObjects.iterator();
     while (tmp$_1.hasNext()) {
       var element_1 = tmp$_1.next();
-      element_1.draw_a4auz3$([this.camera]);
+      element_1.update();
+    }
+    var tmp$_2;
+    tmp$_2 = this.gameObjects.iterator();
+    while (tmp$_2.hasNext()) {
+      var element_2 = tmp$_2.next();
+      element_2.draw_a4auz3$([this.camera]);
     }
   };
-  function Scene$slowMovingAsteroid$ObjectLiteral(mesh, position, roll, scale) {
-    GameObject.call(this, mesh, position, roll, scale);
+  function Scene$slowMovingAsteroid$ObjectLiteral(mesh, radius, position, roll, scale) {
+    GameObject.call(this, mesh, radius, position, roll, scale);
     this.velocity = Vec3_init(0.1, 0.1);
   }
   Scene$slowMovingAsteroid$ObjectLiteral.prototype.move_e8h23$$default = function (dt, t, keysPressed, gameObjects) {
@@ -510,8 +542,8 @@ var kog = function (_, Kotlin) {
     kind: Kind_CLASS,
     interfaces: [GameObject]
   };
-  function Scene$fastMovingAsteroid$ObjectLiteral(mesh, position, roll, scale) {
-    GameObject.call(this, mesh, position, roll, scale);
+  function Scene$fastMovingAsteroid$ObjectLiteral(mesh, radius, position, roll, scale) {
+    GameObject.call(this, mesh, radius, position, roll, scale);
     this.velocity = Vec3_init(1.0, 1.0);
   }
   Scene$fastMovingAsteroid$ObjectLiteral.prototype.move_e8h23$$default = function (dt, t, keysPressed, gameObjects) {
@@ -527,8 +559,8 @@ var kog = function (_, Kotlin) {
     kind: Kind_CLASS,
     interfaces: [GameObject]
   };
-  function Scene$rollingAsteroid$ObjectLiteral(mesh, position, roll, scale) {
-    GameObject.call(this, mesh, position, roll, scale);
+  function Scene$rollingAsteroid$ObjectLiteral(mesh, radius, position, roll, scale) {
+    GameObject.call(this, mesh, radius, position, roll, scale);
     this.rollSpeed = 0.01;
   }
   Scene$rollingAsteroid$ObjectLiteral.prototype.move_e8h23$$default = function (dt, t, keysPressed, gameObjects) {
@@ -539,9 +571,9 @@ var kog = function (_, Kotlin) {
     kind: Kind_CLASS,
     interfaces: [GameObject]
   };
-  function Scene$lander$ObjectLiteral(this$Scene, mesh, position, roll, scale) {
+  function Scene$lander$ObjectLiteral(this$Scene, mesh, radius, position, roll, scale) {
     this.this$Scene = this$Scene;
-    GameObject.call(this, mesh, position, roll, scale);
+    GameObject.call(this, mesh, radius, position, roll, scale);
     this.mass = 1.0;
     this.invMass = 1.0 / this.mass;
     this.invAngularMass = Mat4_init(new Float32Array([this.mass * 0.0025, 0.0, 0.0, 0.0, 0.0, this.mass * 0.0025, 0.0, 0.0, 0.0, 0.0, this.mass * 0.0025, 0.0, 0.0, 0.0, 0.0, 1.0])).invert();
@@ -663,6 +695,18 @@ var kog = function (_, Kotlin) {
     var x_4 = direction.storage[0];
     this.roll = Math_0.atan2(tmp$_7, x_4) - math.PI / 2.0;
     return true;
+  };
+  Scene$lander$ObjectLiteral.prototype.collide = function () {
+    var tmp$;
+    tmp$ = this.this$Scene.gameObjects.iterator();
+    while (tmp$.hasNext()) {
+      var i = tmp$.next();
+      if (!equals(this, i) && this.this$Scene.circleCollision_bk6g6s$(this, i))
+        this.destroy();
+    }
+  };
+  Scene$lander$ObjectLiteral.prototype.destroy = function () {
+    this.this$Scene.gameObjects.remove_11rb$(this);
   };
   Scene$lander$ObjectLiteral.$metadata$ = {
     kind: Kind_CLASS,
