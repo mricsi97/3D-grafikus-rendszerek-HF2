@@ -1,0 +1,6 @@
+web/
+build/
+.gradle/
+*.docx
+*.pdf
+*.pptx
